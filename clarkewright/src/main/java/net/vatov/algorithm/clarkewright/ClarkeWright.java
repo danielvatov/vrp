@@ -1,5 +1,6 @@
 package net.vatov.algorithm.clarkewright;
 
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -7,18 +8,24 @@ import java.util.List;
 import java.util.Map;
 
 import net.vatov.algorithm.AlgorithmException;
+import net.vatov.ampl.solver.Solver;
+import net.vatov.ampl.solver.io.UserIO;
 import net.vatov.math.utils.Distance;
-import net.vatov.math.utils.MatlabIO;
+import net.vatov.math.utils.SavingRow;
+import net.vatov.math.utils.VehicleRoute;
+import net.vatov.math.utils.VrpClient;
+import net.vatov.math.utils.VrpDepot;
 
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ClarkeWright {
+public class ClarkeWright extends Solver {
 
     private static final Logger logger = LoggerFactory.getLogger(ClarkeWright.class);
 
+    final private RealMatrix euclideanCoordinatesXY;
     final private RealMatrix distances;
     final private Integer vehicleCapacity;
     final private Map<Integer, VrpClient> clients = new HashMap<Integer, VrpClient>();
@@ -27,20 +34,25 @@ public class ClarkeWright {
 
     private List<VehicleRoute> routes;
 
+    private VrpDepot depot;
+
     /**
      * 
      * @param euclideanCoordinatesXY
-     *            Coordinates of the clients in euclidean space. Depot is
-     *            expected to be at (0,0)
+     *            Coordinates of the clients and depot in euclidean space. Depot is
+     *            expected to be at the first row
      * @param vehicleCapacity
      *            Capacity of homogeneous vehicle fleet
      * @param demands
      *            Demands of each client for goods. Depot's demand is 0.
      */
     public ClarkeWright(RealMatrix euclideanCoordinatesXY, Integer vehicleCapacity, RealVector demands) {
-        this.distances = Distance.computeEuclideanDistances(euclideanCoordinatesXY);
+        this.euclideanCoordinatesXY = euclideanCoordinatesXY;
+        this.distances = Distance.computeEuclideanDistances(this.euclideanCoordinatesXY);
         this.vehicleCapacity = vehicleCapacity;
-
+        
+        depot = new VrpDepot();
+        
         final int CLIENTS_NUM = demands.getDimension() - 1;
         routes = new ArrayList<VehicleRoute>(CLIENTS_NUM);
         // initial routes - one for every customer
@@ -63,8 +75,8 @@ public class ClarkeWright {
         logger.debug("Clients: {}", clients);
     }
 
-    // TODO: return value
-    public void solve() {
+    @Override
+    public Map<String, String> solve(InputStream input, UserIO io) {
         SavingRow[] savings = computeSavings();
         for (SavingRow s : savings) {
             VehicleRoute route1 = getRouteIfNotInternal(s.getFrom());
@@ -85,8 +97,12 @@ public class ClarkeWright {
                         new Object[] { route1, route2, vehicleCapacity });
                 continue;
             }
+            io.pause(String.format("Merged routes %s and %s\nSaving %f", route1.getLabel(), route2.getLabel(), s.getSaving()));
             mergeRoutes(route1, route2, s);
+            io.refreshData(routes);
         }
+        //TODO
+        return null;
     }
 
     /**
@@ -170,5 +186,37 @@ public class ClarkeWright {
         Collections.sort(ret);
         Collections.reverse(ret);
         return ret.toArray(new SavingRow[ret.size()]);
+    }
+
+    public RealMatrix getEuclideanCoordinatesXY() {
+        return euclideanCoordinatesXY;
+    }
+
+    public RealMatrix getDistances() {
+        return distances;
+    }
+
+    public Map<Integer, VrpClient> getClients() {
+        return clients;
+    }
+
+    public VrpDepot getDepot() {
+        return depot;
+    }
+
+    public List<VehicleRoute> getRoutes() {
+        return routes;
+    }
+
+    @Override
+    public String getName() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public String getDescription() {
+        // TODO Auto-generated method stub
+        return null;
     }
 }

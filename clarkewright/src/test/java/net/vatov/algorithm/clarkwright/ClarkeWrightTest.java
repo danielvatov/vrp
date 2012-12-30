@@ -7,9 +7,10 @@ import java.util.List;
 
 import net.vatov.algorithm.AlgorithmException;
 import net.vatov.algorithm.clarkewright.ClarkeWright;
-import net.vatov.algorithm.clarkewright.SavingRow;
-import net.vatov.algorithm.clarkewright.VehicleRoute;
-import net.vatov.algorithm.clarkewright.VrpClient;
+import net.vatov.ampl.solver.io.UserIO;
+import net.vatov.math.utils.SavingRow;
+import net.vatov.math.utils.VehicleRoute;
+import net.vatov.math.utils.VrpClient;
 
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
@@ -62,7 +63,7 @@ public class ClarkeWrightTest {
     public final void testSolve() {
         Params params = data().get(0);
         ClarkeWright cw = new ClarkeWright(params.coordinates, params.vehicleCapacity, params.demands);
-        cw.solve();
+        cw.solve(null, getDummyIO());
         List<VehicleRoute> routes = Whitebox.<List<VehicleRoute>> getInternalState(cw, "routes");
         assertEquals("Incorrect number of routes", 2, routes.size());
         for (VehicleRoute r : routes) {
@@ -79,6 +80,29 @@ public class ClarkeWrightTest {
                 fail("Incorrect clients in route " + r);
             }
         }
+    }
+
+    private UserIO getDummyIO() {
+        return new UserIO() {
+            
+            public void refreshData(Object data) {                
+            }
+            
+            public void pause(String msg) {
+            }
+            
+            public Boolean getYesNo(Boolean defaultValue, String question) {
+                return null;
+            }
+            
+            public Integer getInt(Integer defaultValue, String question) {
+                return null;
+            }
+            
+            public Integer getChoice(List<String> options, Integer defaultOption, String question) {
+                return null;
+            }
+        };
     }
 
     @Test

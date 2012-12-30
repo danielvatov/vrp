@@ -1,6 +1,7 @@
-package net.vatov.algorithm.clarkewright;
+package net.vatov.math.utils;
 
 import java.util.Arrays;
+
 
 public class SavingRow implements Comparable<SavingRow> {
     private Double saving;
